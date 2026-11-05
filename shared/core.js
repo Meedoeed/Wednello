@@ -1,10 +1,10 @@
 // Бизнес-логика и API WEDNELLO. Работает одинаково на Node-сервере и в браузере (демо-режим):
 // хранилище передаётся снаружи, пароли хэширует переданная функция.
 import { uid, clone, defaultData, normalizeData, slugify, readiness, guestGreeting, presetItems } from './model.js';
-import { TEMPLATES, getTemplate } from './templates.js';
+import { TEMPLATES, getTemplate, FREE_TEMPLATES } from './templates.js';
 
 export const FEATURES = [
-  { key: 'allTemplates', label: 'Все шаблоны', hint: 'Без него доступны «Ivory Letter» и «Кинопремьера»' },
+  { key: 'allTemplates', label: 'Все шаблоны', hint: 'Без него публикуются только бесплатные шаблоны' },
   { key: 'music', label: 'Музыка в приглашении' },
   { key: 'removeBadge', label: 'Без отметки «Сделано в WEDNELLO»' },
   { key: 'export', label: 'Выгрузка гостей и ответов в Excel' },
@@ -14,16 +14,27 @@ export const LIMITS = [
   { key: 'projects', label: 'Приглашений' },
   { key: 'guests', label: 'Гостей в приглашении' },
 ];
-export const BASIC_TEMPLATES = ['ivory', 'cinema'];
+export const BASIC_TEMPLATES = FREE_TEMPLATES;
 
+/**
+ * Тарифы. «Бесплатный» — навсегда, «Премиум» — разовая оплата на durationDays дней
+ * (приглашения остаются доступны гостям и после окончания срока).
+ */
 export const DEFAULT_PLANS = [
   {
-    id: 'personal', name: 'Личный', price: 0, period: 'мес', order: 1, highlight: true, active: true,
-    description: 'Аккаунт пары: все шаблоны и функции. Оплата будет подключена позже.',
-    limits: { projects: 10, guests: 500, team: 2 },
-    features: { allTemplates: true, music: true, couplePortal: true, whiteLabel: false, removeBadge: false, export: true },
+    id: 'free', name: 'Бесплатный', price: 0, period: 'навсегда', durationDays: 0, order: 1, highlight: false, active: true,
+    description: 'Чтобы попробовать и разослать простое приглашение.',
+    limits: { projects: 1, guests: 40 },
+    features: { allTemplates: false, music: false, removeBadge: false, export: false, support: false },
+  },
+  {
+    id: 'premium', name: 'Премиум', price: 1490, period: 'разово', durationDays: 365, order: 2, highlight: true, active: true,
+    description: 'Всё для свадьбы: анимированные шаблоны, музыка, гости без ограничений.',
+    limits: { projects: 5, guests: 1000 },
+    features: { allTemplates: true, music: true, removeBadge: true, export: true, support: true },
   },
 ];
+export const FREE_PLAN_ID = 'free';
 
 export class HttpError extends Error {
   constructor(status, message, extra) { super(message); this.status = status; this.extra = extra; }
@@ -31,8 +42,22 @@ export class HttpError extends Error {
 const bad = (m, s = 400, extra) => { throw new HttpError(s, m, extra); };
 const now = () => new Date().toISOString();
 
+export const DB_VERSION = 2;
 export function emptyDb() {
-  return { version: 1, plans: clone(DEFAULT_PLANS), workspaces: [], users: [], members: [], sessions: [], projects: [], guests: [], responses: [] };
+  return { version: DB_VERSION, plans: clone(DEFAULT_PLANS), workspaces: [], users: [], members: [], sessions: [], projects: [], guests: [], responses: [], payments: [], resets: [] };
+}
+
+/** Миграция старой базы на текущую схему (идемпотентно) */
+export function migrateDb(d) {
+  const base = emptyDb();
+  for (const k of Object.keys(base)) if (d[k] === undefined) d[k] = base[k];
+  if ((d.version || 1) < 2) {
+    // v1: единственный тариф «personal» → новые тарифы; всем существующим — бесплатный
+    d.plans = clone(DEFAULT_PLANS);
+    for (const w of d.workspaces) if (!d.plans.some(p => p.id === w.planId)) w.planId = FREE_PLAN_ID;
+  }
+  d.version = DB_VERSION;
+  return d;
 }
 
 /* ───────── роутер ───────── */
@@ -44,15 +69,41 @@ function compile(routes) {
   });
 }
 
-export function createCore({ store, hashPassword, verifyPassword, isDemo = false, publicBase = '' }) {
+/**
+ * hooks (необязательные, задаёт сервер):
+ *   sendMail({ to, subject, text, html })          — письма (сброс пароля, новые ответы)
+ *   billing.createPayment({ payment, plan, user, ws }) → { providerId, confirmationUrl }
+ *   billing.fetchPayment(providerId)                 → { id, status, paid, amount: { value, currency }, metadata }
+ *   publicUrl                                        — внешний адрес сайта для ссылок в письмах
+ *   adminEmails                                      — e-mail администраторов платформы
+ */
+export function createCore({ store, hashPassword, verifyPassword, isDemo = false, hooks = {} }) {
   const db = () => store.data;
   const save = () => store.save();
+  migrateDb(store.data);
+  const adminEmails = new Set((hooks.adminEmails || []).map(e => String(e).trim().toLowerCase()).filter(Boolean));
+  const publicUrl = (hooks.publicUrl || '').replace(/\/$/, '');
+  const mail = msg => Promise.resolve(hooks.sendMail ? hooks.sendMail(msg) : null).catch(e => console.error('Письмо не отправлено:', e.message));
 
   /* ───────── помощники ───────── */
-  const planOf = ws => db().plans.find(p => p.id === ws?.planId) || db().plans[0] || DEFAULT_PLANS[0];
+  const freePlan = () => db().plans.find(p => p.id === FREE_PLAN_ID) || db().plans.find(p => !p.price) || db().plans[0] || DEFAULT_PLANS[0];
+  const planOf = ws => {
+    const p = db().plans.find(x => x.id === ws?.planId);
+    if (!p) return freePlan();
+    if (p.price > 0 && ws.planUntil && ws.planUntil < now()) return freePlan(); // срок оплаченного тарифа истёк
+    return p;
+  };
   const wsOf = id => db().workspaces.find(w => w.id === id);
   const userOf = id => db().users.find(u => u.id === id);
-  const publicUser = u => u && { id: u.id, email: u.email, name: u.name, isPlatformAdmin: !!u.isPlatformAdmin };
+  const isAdmin = u => !!u && (!!u.isPlatformAdmin || adminEmails.has(String(u.email).toLowerCase()));
+  const publicUser = u => u && { id: u.id, email: u.email, name: u.name, isPlatformAdmin: isAdmin(u) };
+  const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || '') && String(e).length <= 120;
+  const pwOk = p => { const s = String(p || ''); if (s.length < 8) bad('Пароль — не короче 8 символов'); if (s.length > 200) bad('Слишком длинный пароль'); };
+  const sha256 = async s => {
+    const b = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(s)));
+    return Array.from(new Uint8Array(b), x => x.toString(16).padStart(2, '0')).join('');
+  };
+  const pruneSessions = () => { const t = now(); const d = db(); d.sessions = d.sessions.filter(s => !s.expiresAt || s.expiresAt > t); d.resets = (d.resets || []).filter(r => r.expiresAt > t && !r.usedAt); };
 
   function session(token) {
     if (!token) return null;
@@ -135,9 +186,12 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
       projectId: a.role === 'couple' ? a.project.id : null,
       workspace: wsOut(a.ws),
       plan,
+      planUntil: plan.price > 0 ? a.ws.planUntil || null : null,
       usage: {
         projects: db().projects.filter(p => p.workspaceId === a.ws.id && !p.archived).length,
       },
+      notify: { rsvp: a.ws.notify?.rsvp !== false },
+      billing: isDemo || !!hooks.billing,
       isDemo,
     };
   }
@@ -149,8 +203,8 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
     return cand;
   }
 
-  function createWorkspace({ name, ownerId, planId = 'free' }) {
-    const ws = { id: uid(), name, planId, createdAt: now(), brand: { color: '', logo: '', footerText: '', site: '' }, contact: {} };
+  function createWorkspace({ name, ownerId, planId = FREE_PLAN_ID }) {
+    const ws = { id: uid(), name, planId, planUntil: null, createdAt: now(), brand: { color: '', logo: '', footerText: '', site: '' }, contact: {}, notify: { rsvp: true } };
     db().workspaces.push(ws);
     db().members.push({ workspaceId: ws.id, userId: ownerId, role: 'owner', createdAt: now() });
     return ws;
@@ -169,7 +223,8 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
   function addGuests(p, items, ws) {
     const plan = planOf(ws);
     const count = db().guests.filter(g => g.projectId === p.id).length;
-    if (count + items.length > plan.limits.guests) bad(`На тарифе «${plan.name}» — до ${plan.limits.guests} гостей в приглашении`, 402, { limit: 'guests' });
+    const valid = items.filter(x => x && String(x.name || '').trim()).length;
+    if (count + valid > plan.limits.guests) bad(`На тарифе «${plan.name}» — до ${plan.limits.guests} гостей в приглашении. Перейдите на «Премиум», чтобы добавить больше.`, 402, { limit: 'guests' });
     const out = items.filter(x => x && String(x.name || '').trim()).map(x => ({
       id: uid(), projectId: p.id, token: uid(10),
       name: String(x.name).trim().slice(0, 120), salutation: x.salutation || 'Дорогие', custom: x.custom || '',
@@ -195,17 +250,65 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
     return body || {};
   }
 
+  /* ───────── оплата ───────── */
+  function paymentOut(p) {
+    return { id: p.id, planId: p.planId, planName: db().plans.find(x => x.id === p.planId)?.name || p.planId, amount: p.amount, status: p.status, createdAt: p.createdAt, paidAt: p.paidAt || null };
+  }
+  /** Активирует тариф по оплаченному платежу. Идемпотентно: повторный вызов ничего не меняет. */
+  function activatePayment(pay) {
+    if (pay.appliedAt) return false;
+    const ws = wsOf(pay.workspaceId); if (!ws) return false;
+    const plan = db().plans.find(x => x.id === pay.planId); if (!plan) return false;
+    const base = ws.planId === plan.id && ws.planUntil && ws.planUntil > now() ? Date.parse(ws.planUntil) : Date.now();
+    ws.planId = plan.id;
+    ws.planUntil = plan.durationDays ? new Date(base + plan.durationDays * 864e5).toISOString() : null;
+    pay.status = 'succeeded'; pay.paidAt = pay.paidAt || now(); pay.appliedAt = now();
+    save();
+    return true;
+  }
+  /** Сверяет платёж с данными платёжной системы (вызывается из вебхука и при возврате пользователя) */
+  async function syncPayment(pay) {
+    if (!hooks.billing || !pay.providerId || pay.appliedAt) return pay;
+    const remote = await hooks.billing.fetchPayment(pay.providerId);
+    if (!remote) return pay;
+    const amountOk = Math.round(+remote.amount?.value * 100) === Math.round(pay.amount * 100) && (remote.amount?.currency || 'RUB') === 'RUB';
+    if (remote.status === 'succeeded' && remote.paid !== false && amountOk) activatePayment(pay);
+    else if (remote.status === 'canceled') { pay.status = 'canceled'; pay.cancelReason = remote.cancellation_details?.reason || ''; save(); }
+    else if (remote.status === 'succeeded' && !amountOk) { pay.status = 'mismatch'; save(); console.error('Сумма платежа не совпадает', pay.id, remote.amount); }
+    return pay;
+  }
+  async function handleProviderEvent(providerId) {
+    const pay = db().payments.find(p => p.providerId === providerId);
+    if (!pay) return { ok: false, reason: 'unknown payment' };
+    await syncPayment(pay);
+    return { ok: true, status: pay.status };
+  }
+
+  function wipeWorkspace(ws) {
+    const d = db();
+    const pids = new Set(d.projects.filter(p => p.workspaceId === ws.id).map(p => p.id));
+    d.projects = d.projects.filter(p => !pids.has(p.id));
+    d.guests = d.guests.filter(g => !pids.has(g.projectId));
+    d.responses = d.responses.filter(r => !pids.has(r.projectId));
+    d.sessions = d.sessions.filter(s => s.workspaceId !== ws.id && !pids.has(s.projectId));
+    d.members = d.members.filter(m => m.workspaceId !== ws.id);
+    d.workspaces = d.workspaces.filter(w => w.id !== ws.id);
+    return pids;
+  }
+
   /* ───────── маршруты ───────── */
   const routes = compile([
     /* авторизация */
     ['POST', '/auth/register', async ctx => {
-      const { email, password, name, studio } = ctx.body || {};
-      if (!/^\S+@\S+\.\S+$/.test(email || '')) bad('Укажите корректный e-mail');
-      if (String(password || '').length < 6) bad('Пароль — не короче 6 символов');
-      if (db().users.some(u => u.email.toLowerCase() === email.toLowerCase())) bad('Такой e-mail уже зарегистрирован');
-      const user = { id: uid(), email: email.trim(), name: (name || '').trim() || email.split('@')[0], passwordHash: await hashPassword(password), createdAt: now() };
+      const { password, name, consent } = ctx.body || {};
+      const email = String(ctx.body?.email || '').trim();
+      if (!emailOk(email)) bad('Укажите корректный e-mail');
+      pwOk(password);
+      if (!consent && !isDemo) bad('Нужно согласие с условиями и политикой конфиденциальности');
+      if (db().users.some(u => u.email.toLowerCase() === email.toLowerCase())) bad('Такой e-mail уже зарегистрирован. Войдите или восстановите пароль.');
+      const user = { id: uid(), email, name: String(name || '').trim().slice(0, 80) || email.split('@')[0], passwordHash: await hashPassword(password), createdAt: now(), consentAt: now() };
       db().users.push(user);
-      const ws = createWorkspace({ name: user.name, ownerId: user.id, planId: 'free' });
+      const ws = createWorkspace({ name: user.name, ownerId: user.id });
       const token = newSession({ kind: 'user', userId: user.id, workspaceId: ws.id });
       save();
       return { token, me: meOut({ user, ws, role: 'owner' }) };
@@ -216,9 +319,79 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
       if (!user || !(await verifyPassword(password || '', user.passwordHash))) bad('Неверный e-mail или пароль', 401);
       const m = db().members.find(x => x.userId === user.id);
       if (!m) bad('У пользователя нет студии', 403);
+      pruneSessions();
+      user.lastLoginAt = now();
       const token = newSession({ kind: 'user', userId: user.id, workspaceId: m.workspaceId });
       save();
       return { token, me: meOut({ user, ws: wsOf(m.workspaceId), role: m.role }) };
+    }],
+    ['POST', '/auth/couple', async ctx => {
+      const t = String(ctx.body?.token || '');
+      const p = t.length >= 16 && db().projects.find(x => x.coupleToken === t);
+      if (!p) bad('Ссылка для совместного редактирования устарела. Попросите партнёра прислать новую.', 404);
+      const ws = wsOf(p.workspaceId);
+      const token = newSession({ kind: 'couple', projectId: p.id, workspaceId: ws.id });
+      save();
+      return { token, me: meOut({ ws, role: 'couple', project: p }) };
+    }],
+    ['POST', '/auth/forgot', async ctx => {
+      const email = String(ctx.body?.email || '').trim().toLowerCase();
+      if (!emailOk(email)) bad('Укажите корректный e-mail');
+      const user = db().users.find(u => u.email.toLowerCase() === email);
+      if (user) {
+        pruneSessions();
+        const recent = db().resets.filter(r => r.userId === user.id && Date.parse(r.createdAt) > Date.now() - 60_000);
+        if (!recent.length) {
+          const token = uid(32);
+          db().resets.push({ id: uid(), userId: user.id, hash: await sha256(token), createdAt: now(), expiresAt: new Date(Date.now() + 3600e3).toISOString() });
+          save();
+          const link = `${publicUrl}/#reset-${token}`;
+          mail({
+            to: user.email, subject: 'Восстановление пароля WEDNELLO',
+            text: `Здравствуйте!\n\nЧтобы задать новый пароль, откройте ссылку (действует 1 час):\n${link}\n\nЕсли вы не запрашивали восстановление, просто проигнорируйте это письмо.\n\nWEDNELLO`,
+            html: `<p>Здравствуйте!</p><p>Чтобы задать новый пароль, нажмите на кнопку. Ссылка действует 1 час.</p><p><a href="${link}" style="display:inline-block;padding:12px 22px;background:#2b2724;color:#faf7f2;border-radius:999px;text-decoration:none">Задать новый пароль</a></p><p style="color:#777">Если вы не запрашивали восстановление, просто проигнорируйте это письмо.</p>`,
+          });
+          if (isDemo || !hooks.sendMail) return { ok: true, devLink: link };
+        }
+      }
+      return { ok: true };
+    }],
+    ['POST', '/auth/reset', async ctx => {
+      const { token, password } = ctx.body || {};
+      pwOk(password);
+      const hash = await sha256(token || '');
+      const r = db().resets.find(x => x.hash === hash && !x.usedAt && x.expiresAt > now());
+      if (!r) bad('Ссылка устарела или уже использована. Запросите восстановление ещё раз.', 400);
+      const user = userOf(r.userId) || bad('Пользователь не найден', 404);
+      user.passwordHash = await hashPassword(password);
+      r.usedAt = now();
+      const d = db(); d.sessions = d.sessions.filter(s => s.userId !== user.id);
+      const m = d.members.find(x => x.userId === user.id) || bad('У пользователя нет кабинета', 403);
+      const tk = newSession({ kind: 'user', userId: user.id, workspaceId: m.workspaceId });
+      save();
+      return { token: tk, me: meOut({ user, ws: wsOf(m.workspaceId), role: m.role }) };
+    }],
+    ['POST', '/auth/password', async ctx => {
+      const a = auth(ctx);
+      const { current, password } = ctx.body || {};
+      if (!(await verifyPassword(current || '', a.user.passwordHash))) bad('Текущий пароль указан неверно', 400);
+      pwOk(password);
+      a.user.passwordHash = await hashPassword(password);
+      const d = db(); d.sessions = d.sessions.filter(s => s.userId !== a.user.id || s.token === ctx.token);
+      save(); return { ok: true };
+    }],
+    ['DELETE', '/account', async ctx => {
+      const a = auth(ctx);
+      if (!(await verifyPassword(ctx.body?.password || '', a.user.passwordHash))) bad('Пароль указан неверно', 400);
+      if (a.role === 'owner') wipeWorkspace(a.ws);
+      const d = db();
+      d.members = d.members.filter(m => m.userId !== a.user.id);
+      d.sessions = d.sessions.filter(s => s.userId !== a.user.id);
+      d.resets = d.resets.filter(r => r.userId !== a.user.id);
+      d.users = d.users.filter(u => u.id !== a.user.id);
+      // платежи храним для бухгалтерии, но без персональных данных
+      d.payments.forEach(p => { if (p.userId === a.user.id) { p.userId = null; p.email = ''; } });
+      save(); return { ok: true };
     }],
     ['POST', '/auth/logout', async ctx => {
       const d = db(); d.sessions = d.sessions.filter(s => s.token !== ctx.token); save(); return { ok: true };
@@ -228,25 +401,80 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
     /* студия */
     ['PATCH', '/workspace', async ctx => {
       const a = auth(ctx);
-      const { name, brand, contact } = ctx.body || {};
+      const { name, brand, contact, notify } = ctx.body || {};
       if (name !== undefined) { a.ws.name = String(name).slice(0, 80) || a.ws.name; if (a.user) a.user.name = a.ws.name; }
+      if (notify) a.ws.notify = { ...a.ws.notify, rsvp: notify.rsvp !== false };
       if (brand) a.ws.brand = { ...a.ws.brand, ...brand };
       if (contact) a.ws.contact = { ...a.ws.contact, ...contact };
       save(); return meOut(a);
     }],
-    ['POST', '/workspace/plan', async ctx => {
+    /* оплата */
+    ['GET', '/billing', async ctx => {
       const a = auth(ctx);
-            const plan = db().plans.find(p => p.id === ctx.body?.planId && p.active !== false);
-      if (!plan) bad('Тариф не найден', 404);
-      const used = db().projects.filter(p => p.workspaceId === a.ws.id && !p.archived).length;
-      if (used > plan.limits.projects) bad(`Сейчас активно ${used} приглашений, а в тарифе «${plan.name}» — ${plan.limits.projects}. Отправьте лишние в архив.`, 409);
-      a.ws.planId = plan.id; save(); return meOut(a);
+      return {
+        plans: db().plans.filter(p => p.active !== false).sort((x, y) => x.order - y.order),
+        current: planOf(a.ws).id, planUntil: a.ws.planUntil || null, enabled: isDemo || !!hooks.billing,
+        payments: db().payments.filter(p => p.workspaceId === a.ws.id).sort((x, y) => (x.createdAt < y.createdAt ? 1 : -1)).map(paymentOut),
+      };
+    }],
+    ['POST', '/billing/checkout', async ctx => {
+      const a = auth(ctx);
+      if (a.role !== 'owner') bad('Оплачивает владелец аккаунта', 403);
+      const plan = db().plans.find(p => p.id === ctx.body?.planId && p.active !== false && p.price > 0) || bad('Тариф не найден', 404);
+      const pay = { id: uid(), workspaceId: a.ws.id, userId: a.user.id, email: a.user.email, planId: plan.id, amount: plan.price, status: 'pending', provider: isDemo ? 'demo' : 'yookassa', providerId: null, createdAt: now() };
+      if (isDemo) {
+        db().payments.push(pay); activatePayment(pay);
+        return { payment: paymentOut(pay), confirmationUrl: null, demo: true, me: meOut(a) };
+      }
+      if (!hooks.billing) bad('Оплата ещё не подключена. Напишите нам — поможем.', 503);
+      const r = await hooks.billing.createPayment({ payment: pay, plan, user: a.user, ws: a.ws });
+      pay.providerId = r.providerId; pay.status = r.status || 'pending';
+      db().payments.push(pay); save();
+      return { payment: paymentOut(pay), confirmationUrl: r.confirmationUrl };
+    }],
+    ['POST', '/billing/payments/:id/sync', async ctx => {
+      const a = auth(ctx);
+      const pay = db().payments.find(p => p.id === ctx.params.id && p.workspaceId === a.ws.id) || bad('Платёж не найден', 404);
+      await syncPayment(pay);
+      return { payment: paymentOut(pay), me: meOut(a) };
+    }],
+    /* администрирование платформы */
+    ['GET', '/admin/stats', async ctx => {
+      const a = auth(ctx);
+      if (!isAdmin(a.user)) bad('Раздел для администратора сервиса', 403);
+      const d = db(), t = Date.now(), day = 864e5;
+      const since = n => x => Date.parse(x.createdAt) > t - n * day;
+      const paid = d.payments.filter(p => p.status === 'succeeded');
+      const sum = list => list.reduce((s, p) => s + (+p.amount || 0), 0);
+      const daily = Array.from({ length: 30 }, (_, i) => {
+        const from = new Date(t - (29 - i) * day).toISOString().slice(0, 10);
+        return {
+          date: from,
+          signups: d.users.filter(u => u.createdAt.slice(0, 10) === from).length,
+          revenue: sum(paid.filter(p => (p.paidAt || p.createdAt).slice(0, 10) === from)),
+        };
+      });
+      return {
+        users: { total: d.users.length, week: d.users.filter(since(7)).length, month: d.users.filter(since(30)).length },
+        projects: { total: d.projects.length, published: d.projects.filter(p => p.status === 'published').length },
+        guests: d.guests.length, responses: d.responses.length,
+        paying: d.workspaces.filter(w => planOf(w).price > 0).length,
+        revenue: { total: sum(paid), month: sum(paid.filter(p => Date.parse(p.paidAt || p.createdAt) > t - 30 * day)) },
+        conversion: d.users.length ? Math.round((new Set(paid.map(p => p.workspaceId)).size / d.users.length) * 1000) / 10 : 0,
+        templates: Object.fromEntries(TEMPLATES.map(x => [x.name, d.projects.filter(p => p.templateId === x.id).length])),
+        daily,
+        recentPayments: d.payments.slice().sort((x, y) => (x.createdAt < y.createdAt ? 1 : -1)).slice(0, 20).map(p => ({ ...paymentOut(p), email: p.email })),
+        recentUsers: d.users.slice().sort((x, y) => (x.createdAt < y.createdAt ? 1 : -1)).slice(0, 20).map(u => {
+          const m = d.members.find(x => x.userId === u.id); const w = m && wsOf(m.workspaceId);
+          return { email: u.email, name: u.name, createdAt: u.createdAt, plan: w ? planOf(w).name : '—', projects: w ? d.projects.filter(p => p.workspaceId === w.id).length : 0 };
+        }),
+      };
     }],
     /* тарифы */
     ['GET', '/plans', async () => db().plans.slice().sort((a, b) => a.order - b.order)],
     ['PUT', '/plans', async ctx => {
       const a = auth(ctx);
-      if (!a.user.isPlatformAdmin) bad('Тарифы редактирует администратор сервиса', 403);
+      if (!isAdmin(a.user)) bad('Тарифы редактирует администратор сервиса', 403);
       const list = Array.isArray(ctx.body) ? ctx.body : bad('Ожидается список тарифов');
       if (!list.length) bad('Нужен хотя бы один тариф');
       const ids = new Set();
@@ -255,7 +483,7 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
         if (ids.has(id)) bad(`Повторяется код тарифа «${id}»`); ids.add(id);
         return {
           id, name: String(p.name || 'Тариф').slice(0, 40), description: String(p.description || '').slice(0, 200),
-          price: Math.max(0, Math.round(+p.price || 0)), period: p.period || 'мес', order: i + 1,
+          price: Math.max(0, Math.round(+p.price || 0)), period: p.period || 'разово', durationDays: Math.max(0, Math.round(+p.durationDays || 0)), order: i + 1,
           highlight: !!p.highlight, active: p.active !== false,
           limits: Object.fromEntries(LIMITS.map(l => [l.key, Math.max(0, Math.round(+p.limits?.[l.key] || 0))])),
           features: Object.fromEntries(FEATURES.map(f => [f.key, !!p.features?.[f.key]])),
@@ -276,7 +504,6 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
       const used = db().projects.filter(p => p.workspaceId === a.ws.id && !p.archived).length;
       if (used >= plan.limits.projects) bad(`На тарифе «${plan.name}» — до ${plan.limits.projects} активных приглашений. Перейдите на тариф выше или удалите черновик.`, 402, { limit: 'projects' });
       const { templateId, title, client, couple, date, preset, city } = ctx.body || {};
-      if (!templateAllowed(a.ws, templateId)) bad('Шаблон доступен на тарифе выше', 402, { limit: 'template' });
       const data = defaultData(templateId);
       if (couple?.a) data.couple.a = couple.a;
       if (couple?.b) data.couple.b = couple.b;
@@ -295,10 +522,7 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
       const p = projectFor(a, ctx.params.id);
       const b = ctx.body || {};
       if (b.baseRev && b.baseRev !== p.rev && !b.force) bad('Приглашение изменили в другой вкладке. Обновите страницу.', 409, { rev: p.rev });
-      if (b.templateId && b.templateId !== p.templateId) {
-        if (!templateAllowed(a.ws, b.templateId)) bad('Шаблон доступен на тарифе выше', 402, { limit: 'template' });
-        p.templateId = getTemplate(b.templateId).id;
-      }
+      if (b.templateId && b.templateId !== p.templateId) p.templateId = getTemplate(b.templateId).id;
       if (b.title !== undefined) p.title = String(b.title).slice(0, 120);
       if (b.client && a.role !== 'couple') p.client = { ...p.client, ...b.client };
       if (b.settings && a.role !== 'couple') p.settings = { ...p.settings, ...b.settings };
@@ -336,7 +560,10 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
     ['POST', '/projects/:id/publish', async ctx => {
       const a = auth(ctx, { allowCouple: true });
       const p = projectFor(a, ctx.params.id);
-            const want = ctx.body?.slug ? slugify(ctx.body.slug) : (p.slug || [p.data.couple.a, p.data.couple.b].filter(Boolean).join('-i-') || p.title);
+      if (a.role === 'couple' && p.settings?.couplePublish === false) bad('Публикует владелец аккаунта', 403);
+      if (p.archived) bad('Приглашение в архиве. Верните его из архива, чтобы опубликовать.', 409);
+      if (!templateAllowed(a.ws, p.templateId)) bad(`Шаблон «${getTemplate(p.templateId).name}» входит в тариф «Премиум». Оплатите его или выберите бесплатный шаблон.`, 402, { limit: 'template' });
+      const want = ctx.body?.slug ? slugify(ctx.body.slug) : (p.slug || [p.data.couple.a, p.data.couple.b].filter(Boolean).join('-i-') || p.title);
       if (db().projects.some(x => x.slug === want && x.id !== p.id) && ctx.body?.slug) bad('Этот адрес уже занят — попробуйте другой');
       p.slug = uniqueSlug(want, p.id);
       p.published = { templateId: p.templateId, data: clone(p.data) };
@@ -347,6 +574,16 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
       const a = auth(ctx);
       const p = projectFor(a, ctx.params.id);
       p.status = 'draft'; save(); return projectOut(p, { full: true });
+    }],
+    ['POST', '/projects/:id/couple-link', async ctx => {
+      const a = auth(ctx);
+      const p = projectFor(a, ctx.params.id);
+      if (ctx.body?.reset || !p.coupleToken) {
+        p.coupleToken = uid(24);
+        const d = db(); d.sessions = d.sessions.filter(s => !(s.kind === 'couple' && s.projectId === p.id));
+        save();
+      }
+      return { token: p.coupleToken };
     }],
     /* гости */
     ['GET', '/projects/:id/guests', async ctx => {
@@ -429,9 +666,11 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
     ['POST', '/public/rsvp/:slug', async ctx => {
       const p = db().projects.find(x => x.slug === ctx.params.slug && x.status === 'published' && !x.archived);
       if (!p) bad('Приглашение не найдено', 404);
+      if (ctx.body?.website) return { ok: true }; // ловушка для ботов: поле скрыто от людей
       const b = normalizeResponse(ctx.body);
       const name = String(b.name || '').trim().slice(0, 120);
       if (!name) bad('Укажите имя');
+      if (db().responses.filter(x => x.projectId === p.id).length >= 3000) bad('Приём ответов временно ограничен', 429);
       const guest = ctx.query.g ? db().guests.find(g => g.projectId === p.id && g.token === ctx.query.g) : null;
       const answers = {};
       for (const [k, v] of Object.entries(b.answers || {}).slice(0, 20)) answers[String(k).slice(0, 120)] = String(v).slice(0, 500);
@@ -443,7 +682,20 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
       const d = db();
       if (guest) d.responses = d.responses.filter(x => x.guestId !== guest.id);
       d.responses.push(r);
-      save(); return { ok: true };
+      save();
+      const ws = wsOf(p.workspaceId);
+      if (ws && ws.notify?.rsvp !== false && hooks.sendMail) {
+        const owners = d.members.filter(m => m.workspaceId === ws.id).map(m => userOf(m.userId)).filter(Boolean);
+        const st = projectStats(p);
+        const line = r.attending ? `придёт${r.guests > 1 ? ` (${r.guests} чел.)` : ''}` : 'не сможет прийти';
+        const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        for (const u of owners) mail({
+          to: u.email, subject: `${r.name} ${line} — ${p.title}`,
+          text: `${r.name} ${line}.${r.food ? `\nПитание: ${r.food}` : ''}${r.wish ? `\nПожелание: ${r.wish}` : ''}\n\nВсего ответили ${st.responses}, придут ${st.people} чел.\nВсе ответы: ${publicUrl}/#responses-${p.id}\n\nОтключить уведомления можно в настройках аккаунта.`,
+          html: `<p><b>${esc(r.name)}</b> ${line}.</p>${r.food ? `<p>Питание: ${esc(r.food)}</p>` : ''}${r.wish ? `<blockquote style="margin:0;padding:8px 14px;border-left:3px solid #c9a979;color:#555"><i>${esc(r.wish)}</i></blockquote>` : ''}<p>Всего ответили ${st.responses}, придут ${st.people} чел.</p><p><a href="${publicUrl}/#responses-${p.id}">Открыть все ответы</a></p><p style="color:#999;font-size:12px">Отключить уведомления можно в настройках аккаунта.</p>`,
+        });
+      }
+      return { ok: true };
     }],
   ]);
 
@@ -466,7 +718,7 @@ export function createCore({ store, hashPassword, verifyPassword, isDemo = false
     return { status: 404, data: { error: 'Не найдено' } };
   }
 
-  return { handle, createWorkspace, createProject, addGuests, planOf, wsOf, brandFor, uniqueSlug };
+  return { handle, createWorkspace, createProject, addGuests, planOf, wsOf, brandFor, uniqueSlug, handleProviderEvent, activatePayment };
 }
 
 export { TEMPLATES };

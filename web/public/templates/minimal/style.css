@@ -1,0 +1,41 @@
+/* Минимализм — типографика, воздух и одно большое фото */
+:root{--bg:#f4f2ee;--bg-2:#e9e5de;--ink:#141414;--muted:#6d6862;--accent:#8a7a66;--line:#d9d4cb;--card:#fbfaf7;
+  --display:'Prata',Georgia,serif;--text:'Manrope',system-ui,sans-serif;--label:'Manrope',system-ui,sans-serif;--r:2px}
+body{font-size:16.5px}
+.k-h2{font-size:clamp(36px,6vw,64px)}
+.k-h2 em,.m-names em{color:var(--accent)}
+.k-head .k-num{display:block;margin-bottom:18px}
+.k-kick{color:var(--muted)}
+
+.m-hero{min-height:100svh;display:grid;grid-template-rows:auto 1fr auto;padding:22px max(22px,env(safe-area-inset-left)) 0;position:relative}
+.m-top{display:flex;justify-content:space-between;font:500 12px/1 var(--label);letter-spacing:.3em;text-transform:uppercase;padding-bottom:18px;border-bottom:1px solid var(--ink)}
+.m-names-wrap{display:grid;align-content:center;justify-items:center;text-align:center;padding:7vh 0 5vh}
+.m-kick{font:500 12px/1 var(--label);letter-spacing:.42em;text-transform:uppercase;color:var(--muted);margin-bottom:26px}
+.m-names{font:400 clamp(54px,13vw,190px)/.92 var(--display);letter-spacing:-.03em;text-wrap:balance}
+.m-names em{display:block;font-style:normal;font-size:.42em;line-height:1.5}
+.m-names,.m-kick,.m-top{animation:m-up 1.3s cubic-bezier(.2,.7,.2,1) both}
+.m-kick{animation-delay:.15s}.m-names{animation-delay:.3s}
+@keyframes m-up{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+.m-photo{height:min(78vh,820px);margin:0 calc(-1 * max(22px,env(safe-area-inset-left)));animation:m-fade 1.6s .6s both}
+.m-photo img{transform:scale(var(--z,1.12));transition:transform .1s linear;filter:grayscale(var(--g,1))}
+@keyframes m-fade{from{opacity:0}to{opacity:1}}
+
+.vz-guest{color:var(--ink);text-shadow:none;font:italic 400 clamp(20px,2.4vw,28px)/1.3 var(--display);margin-bottom:22px}
+
+.m-marquee{overflow:hidden;border-block:1px solid var(--ink);padding:16px 0;background:var(--bg)}
+.m-track{display:inline-block;white-space:nowrap;font:400 clamp(22px,3vw,34px)/1 var(--display);animation:m-run 38s linear infinite;padding-left:100%}
+@keyframes m-run{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){.m-track{animation:none;padding-left:0}}
+
+.s-date{margin-top:30px;font:500 13px/1 var(--label);letter-spacing:.24em;text-transform:uppercase}
+.s-story-in{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,6vw,80px);align-items:center}
+.s-story-photo{aspect-ratio:4/5}
+@media (max-width:760px){.s-story-in{grid-template-columns:1fr}}
+.s-venues,.s-dress,.s-rsvp{background:var(--card);border-block:1px solid var(--line)}
+.k-venue{background:var(--bg);border-color:var(--ink)}
+.k-form{background:var(--bg);border-color:var(--ink)}
+.k-sw i{border-radius:0;width:84px;height:110px}
+.k-gallery .k-photo{border-radius:0}
+.s-end{font:400 clamp(44px,8vw,96px)/1 var(--display);margin-bottom:18px}
+.s-meta{margin-top:30px;font:500 12px/1 var(--label);letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.vz-music{background:var(--ink);color:var(--bg);border-color:var(--ink)}

@@ -18,7 +18,8 @@ export async function seedDemo({ store, core, hashPassword }) {
   if (db.users.some(u => u.email === 'demo@wednello.ru')) return;
   const user = { id: uid(), email: 'demo@wednello.ru', name: 'Анна', passwordHash: await hashPassword('demo123'), createdAt: new Date().toISOString() };
   db.users.push(user);
-  const ws = core.createWorkspace({ name: 'Анна', ownerId: user.id, planId: 'personal' });
+  const ws = core.createWorkspace({ name: 'Анна', ownerId: user.id, planId: 'premium' });
+  ws.planUntil = new Date(Date.now() + 365 * 864e5).toISOString();
 
   const mk = (templateId, o) => {
     const d = defaultData(templateId);

@@ -1,13 +1,14 @@
 {
   "name": "wednello",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "WEDNELLO — конструктор свадебных приглашений для студий и пар (B2B2C SaaS)",
+  "description": "WEDNELLO — онлайн-приглашения на свадьбу с анкетой для гостей",
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs --watch & node --watch server/index.js",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "react": "19.2.0",
@@ -16,5 +17,7 @@
   "devDependencies": {
     "esbuild": "0.25.0"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

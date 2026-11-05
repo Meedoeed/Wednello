@@ -12,7 +12,8 @@ const watch = process.argv.includes('--watch');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
 fs.cpSync(path.join(root, 'web/public'), out, { recursive: true });
-fs.copyFileSync(path.join(root, 'web/index.html'), path.join(out, 'index.html'));
+const build = Date.now().toString(36);
+fs.writeFileSync(path.join(out, 'index.html'), fs.readFileSync(path.join(root, 'web/index.html'), 'utf8').replaceAll('__BUILD__', build));
 
 const opts = {
   entryPoints: { app: path.join(root, 'web/src/main.jsx') },

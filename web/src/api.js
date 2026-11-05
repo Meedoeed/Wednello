@@ -10,6 +10,8 @@ try { token = localStorage.getItem(TOKEN_KEY); } catch {}
 export const getToken = () => token;
 export function setToken(t) { token = t; try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch {} }
 export const getMode = () => mode;
+/** Настройки, которые сервер вставляет в страницу (window.WN_CONFIG). В демо-режиме — пусто. */
+export const appConfig = () => (typeof window !== 'undefined' && window.WN_CONFIG) || {};
 
 /* ───────── браузерное хранилище ───────── */
 function idb() {

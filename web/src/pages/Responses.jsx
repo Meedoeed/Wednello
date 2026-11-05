@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { get, del, download } from '../api.js';
 import { Button, Icon, Badge, Empty, Menu, Confirm, Segmented, useToast, copyText, plural, timeAgo } from '../ui.jsx';
 import { ProjectHeader } from './ProjectHeader.jsx';
+import { useApp } from '../App.jsx';
 
 const toCsv = rows => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
 
 export function ResponsesPage({ projectId }) {
+  const { me, nav } = useApp();
   const toast = useToast();
   const [project, setProject] = useState(null);
   const [list, setList] = useState(null);
@@ -40,10 +42,10 @@ export function ResponsesPage({ projectId }) {
   return (
     <div className="page page-wide">
       <ProjectHeader project={project} tab="responses" responses={list.length} guests={guests.length}
-        actions={list.length > 0 && <Menu trigger={<Button variant="ghost" icon="download">Выгрузить</Button>} items={[
+        actions={list.length > 0 && (me.plan?.features?.export ? <Menu trigger={<Button variant="ghost" icon="download">Выгрузить</Button>} items={[
           { icon: 'download', label: 'Скачать CSV для Excel', onClick: () => download(`otvety-${project.slug || project.id}.csv`, toCsv(rows())) },
           { icon: 'copy', label: 'Скопировать таблицу', hint: 'Для вставки в Google Таблицы', onClick: async () => { if (await copyText(rows().map(r => r.join('\t')).join('\n'))) toast('Таблица скопирована'); } },
-        ]} />} />
+        ]} /> : <Button variant="ghost" icon="crown" onClick={() => { toast('Выгрузка в Excel входит в Премиум'); nav('plans'); }}>Выгрузить</Button>)} />
 
       {list.length === 0 ? (
         <Empty icon="inbox" title="Ответов пока нет">Когда гости заполнят анкету в приглашении, здесь появятся их ответы, число гостей, пожелания и особенности питания.</Empty>

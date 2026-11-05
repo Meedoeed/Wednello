@@ -8,6 +8,7 @@ import { useApp, Logo } from '../App.jsx';
 import { qrSvg } from '../lib/qr.js';
 import { PANELS, PanelBody } from './Panels.jsx';
 import { statusOf } from './Dashboard.jsx';
+import { Paywall } from './Pricing.jsx';
 
 const SECTION_TO_PANEL = { main: 'main', venues: 'venues', program: 'program', dress: 'dress', photos: 'photos', story: 'photos', rsvp: 'rsvp', words: 'texts', footer: 'texts' };
 
@@ -109,7 +110,7 @@ export function EditorPage({ projectId }) {
   const t = getTemplate(d.templateId);
   const previewProject = { id: project.id, templateId: d.templateId, data: d.data };
   const guest = guests.find(g => g.id === asGuest) || null;
-  const brand = { text: 'Создано в WEDNELLO' };
+  const brand = me.plan?.features?.removeBadge ? null : { text: 'Создано в WEDNELLO' };
   const st = statusOf(project);
 
   return (
@@ -199,7 +200,9 @@ function PublishDialog({ open, onClose, project, setProject, data, templateId, f
   const list = useMemo(() => readiness({ templateId, data }), [templateId, data]);
   const done = list.filter(x => x.ok).length;
   const url = project.slug ? inviteUrl(project.slug) : '';
-  const canPublish = true;
+  const canPublish = !couple || project.settings?.couplePublish !== false;
+  const tpl = getTemplate(templateId);
+  const locked = tpl.premium && !me.plan?.features?.allTemplates;
 
   const publish = async () => {
     setBusy(true);
@@ -228,7 +231,7 @@ function PublishDialog({ open, onClose, project, setProject, data, templateId, f
               </li>
             ))}
           </ul>
-          {canPublish ? <>
+          {locked ? <Paywall title={`«${tpl.name}» — премиум-шаблон`}>{couple ? 'Чтобы опубликовать его, владельцу аккаунта нужно подключить Премиум. Или выберите бесплатный шаблон в разделе «Шаблон».' : 'Опубликуйте его после оплаты Премиума или выберите бесплатный шаблон в разделе «Шаблон» — все данные сохранятся.'}</Paywall> : canPublish ? <>
             <Field label="Адрес приглашения" hint="Латиница, цифры и дефис. Можно поменять до рассылки гостям.">
               <div className="slug-input"><span className="mono">…/i/</span><input className="input mono" value={slug} onChange={e => setSlug(slugify(e.target.value) || e.target.value)} /></div>
             </Field>

@@ -5,6 +5,7 @@ import { post } from '../api.js';
 import { Button, Field, Input, Icon, useToast } from '../ui.jsx';
 import { TemplateFrame, DeviceStage } from '../Preview.jsx';
 import { Logo, useApp } from '../App.jsx';
+import { Consent } from './Auth.jsx';
 
 const STEPS = ['Шаблон', 'Пара и дата', 'План дня', 'Сохранение'];
 const ss = { get: k => { try { return sessionStorage.getItem(k); } catch { return null; } }, del: k => { try { sessionStorage.removeItem(k); } catch {} } };
@@ -20,6 +21,7 @@ export function Wizard() {
   const [preset, setPreset] = useState('');
   const [acc, setAcc] = useState({ name: '', email: '', password: '' });
   const [busy, setBusy] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [err, setErr] = useState('');
   const last = me ? 2 : 3;
 
@@ -32,12 +34,12 @@ export function Wizard() {
     return { id: 'wizard', templateId: tpl, data: d };
   }, [tpl, a, b, date, city, preset]);
 
-  const canNext = step === 1 ? a.trim() && b.trim() && date : true;
+  const canNext = step === 1 ? a.trim() && b.trim() && date : step === 3 && !me ? consent && acc.email && acc.password.length >= 8 : true;
   const create = async () => {
     setErr(''); setBusy(true);
     try {
       if (!me) {
-        const res = await post('/auth/register', { ...acc, name: acc.name || a.trim() });
+        const res = await post('/auth/register', { ...acc, name: acc.name || a.trim(), consent });
         signIn(res);
       }
       const p = await post('/projects', { templateId: tpl, couple: { a: a.trim(), b: b.trim() }, date, city: city.trim() || undefined, preset: preset || undefined, title: `${a.trim()} и ${b.trim()}` });
@@ -67,12 +69,12 @@ export function Wizard() {
           {step === 0 && <>
             <p className="eyebrow">Шаг 1 из {last + 1}</p>
             <h1>Выберите <em>настроение</em></h1>
-            <p className="wiz-lead">Шаблон можно сменить позже, ваши данные сохранятся.</p>
+            <p className="wiz-lead">Шаблон можно сменить позже, ваши данные сохранятся. Премиум-шаблоны настраиваются бесплатно, оплата — только перед публикацией.</p>
             <div className="wiz-tpls">
               {TEMPLATES.map(t => (
                 <button key={t.id} type="button" className={'wiz-tpl' + (tpl === t.id ? ' on' : '')} onClick={() => setTpl(t.id)} aria-pressed={tpl === t.id}>
                   <span className="wiz-tpl-img"><img src={t.cover} alt="" /></span>
-                  <span className="wiz-tpl-txt"><b>{t.name}</b><small>{t.tagline}</small></span>
+                  <span className="wiz-tpl-txt"><b>{t.name}{t.premium && <i className="pro-tag">Премиум</i>}</b><small>{t.tagline}</small></span>
                   <span className="wiz-tpl-check"><Icon name="check" size={14} /></span>
                 </button>
               ))}
@@ -118,7 +120,8 @@ export function Wizard() {
             <form className="wiz-fields" onSubmit={e => { e.preventDefault(); create(); }}>
               <Field label="Ваше имя"><Input value={acc.name} onChange={e => setAcc({ ...acc, name: e.target.value })} placeholder={a || 'Анна'} autoComplete="name" /></Field>
               <Field label="E-mail"><Input type="email" value={acc.email} onChange={e => setAcc({ ...acc, email: e.target.value })} autoComplete="email" required /></Field>
-              <Field label="Пароль" hint="Не короче 6 символов"><Input type="password" value={acc.password} onChange={e => setAcc({ ...acc, password: e.target.value })} autoComplete="new-password" required /></Field>
+              <Field label="Пароль" hint="Не короче 8 символов"><Input type="password" value={acc.password} onChange={e => setAcc({ ...acc, password: e.target.value })} autoComplete="new-password" minLength={8} required /></Field>
+              <Consent checked={consent} onChange={setConsent} />
               <button type="submit" hidden />
               <p className="small muted">Уже есть аккаунт? <button type="button" className="link-btn" onClick={() => nav('login')}>Войти</button></p>
             </form>

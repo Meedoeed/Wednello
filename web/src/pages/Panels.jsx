@@ -441,7 +441,7 @@ function MusicPanel({ data, setData }) {
   };
   return <>
     <PanelHead title="Музыка" help="Кнопка с нотой в углу приглашения. Музыка включается только по нажатию гостя — браузеры запрещают автозапуск со звуком." />
-    {!allowed && <div className="alert alert-gold"><Icon name="lock" size={16} /><div>Музыка доступна на тарифе «Студия» и выше. Настройки сохранятся, но гости их не увидят. <button className="link-btn" onClick={() => nav('plans')}>Тарифы</button></div></div>}
+    {!allowed && <div className="alert alert-gold"><Icon name="crown" size={16} /><div>Музыка входит в Премиум. Настроить можно уже сейчас, гости услышат её после подключения тарифа. <button className="link-btn" onClick={() => nav('plans')}>Подробнее</button></div></div>}
     <Toggle checked={m.enabled} onChange={v => set({ enabled: v })} label="Музыка в приглашении" />
     <input ref={ref} type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/*" hidden onChange={e => { onFile(e.target.files[0]); e.target.value = ''; }} />
     <Group title="Трек">
@@ -462,15 +462,16 @@ function MusicPanel({ data, setData }) {
 function DesignPanel({ data, setData, template, templateId, setTemplate }) {
   const { me } = useApp();
   const [ask, setAsk] = useState(null);
-  const allowed = id => me.plan?.features?.allTemplates || BASIC_TEMPLATES.includes(id);
+  const free = !me.plan?.features?.allTemplates;
   const sectionLabels = { program: 'План дня', dress: 'Дресс-код', photos: 'Кадры на память', rsvp: 'Анкета', words: 'Тёплые слова', story: 'История' };
   return <>
     <PanelHead title="Шаблон" help="Имена, дата, место, план дня, фото, палитра и анкета переходят в новый шаблон. Тексты у каждого шаблона свои." />
+    {free && <p className="muted small">Шаблоны с отметкой «Премиум» можно примерить и настроить бесплатно, а опубликовать — после подключения тарифа.</p>}
     <div className="tpl-switch">
       {TEMPLATES.map(t => (
-        <button key={t.id} type="button" className={'tpl-switch-item' + (t.id === templateId ? ' on' : '')} disabled={!allowed(t.id)} onClick={() => t.id !== templateId && setAsk(t)}>
+        <button key={t.id} type="button" className={'tpl-switch-item' + (t.id === templateId ? ' on' : '')} onClick={() => t.id !== templateId && setAsk(t)}>
           <img src={t.cover} alt="" loading="lazy" />
-          <span><b>{t.name}</b><small>{allowed(t.id) ? t.mood.join(' · ') : 'Тариф «Студия»'}</small></span>
+          <span><b>{t.name}{t.premium && <i className="pro-tag">Премиум</i>}</b><small>{t.mood.join(' · ')}</small></span>
           {t.id === templateId && <Icon name="check" size={16} />}
         </button>
       ))}

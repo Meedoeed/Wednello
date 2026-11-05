@@ -3,6 +3,7 @@ import { get, post, patch, del, inviteUrl, download } from '../api.js';
 import { SALUTATIONS, guestGreeting, formatDateLong } from '../../../shared/model.js';
 import { Button, Icon, Badge, Field, Input, Select, Modal, Menu, Confirm, Empty, Textarea, useToast, copyText, plural } from '../ui.jsx';
 import { ProjectHeader } from './ProjectHeader.jsx';
+import { Paywall } from './Pricing.jsx';
 import { useApp } from '../App.jsx';
 
 export const DEFAULT_MESSAGE = '{Обращение} Мы женимся и очень хотим видеть вас рядом {Дата}. Всё о празднике и короткая анкета — по ссылке: {Ссылка}';
@@ -16,7 +17,7 @@ export function guestStatus(g) {
 const toCsv = rows => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
 
 export function GuestsPage({ projectId }) {
-  const { me } = useApp();
+  const { me, nav } = useApp();
   const toast = useToast();
   const [project, setProject] = useState(null);
   const [guests, setGuests] = useState(null);
@@ -72,15 +73,17 @@ export function GuestsPage({ projectId }) {
     <div className="page page-wide">
       <ProjectHeader project={project} tab="guests" guests={guests.length}
         actions={<>
-          <Menu trigger={<Button variant="ghost" icon="download">Выгрузить</Button>} items={[
+          {me.plan?.features?.export ? <Menu trigger={<Button variant="ghost" icon="download">Выгрузить</Button>} items={[
             { icon: 'download', label: 'Скачать CSV для Excel', onClick: () => download(`gosti-${project.slug || project.id}.csv`, toCsv(exportRows())) },
             { icon: 'copy', label: 'Скопировать таблицу', hint: 'Для вставки в Google Таблицы', onClick: async () => { if (await copyText(exportRows().map(r => r.join('\t')).join('\n'))) toast('Таблица скопирована'); } },
-          ]} />
+          ]} /> : <Button variant="ghost" icon="crown" onClick={() => { toast('Выгрузка в Excel входит в Премиум'); nav('plans'); }}>Выгрузить</Button>}
           <Button icon="upload" onClick={() => setImporting(true)}>Список целиком</Button>
           <Button variant="primary" icon="plus" onClick={() => setEdit({ name: '', salutation: 'Дорогие', seats: 1, group: '' })}>Гость</Button>
         </>} />
 
       {!published && <div className="alert alert-info"><Icon name="info" size={16} /><div>Приглашение ещё не опубликовано. Список можно собирать уже сейчас — персональные ссылки заработают после публикации.</div></div>}
+
+      {limit && limit < 1000 && guests.length >= limit * 0.75 && <Paywall compact title={guests.length >= limit ? `Достигнут лимит: ${limit} гостей` : `Использовано ${guests.length} из ${limit} гостей`}>На Премиуме — без ограничений, плюс выгрузка в Excel и музыка.</Paywall>}
 
       <div className="guest-stats">
         <div><b className="num">{stats.total}</b><span>{plural(stats.total, 'приглашение', 'приглашения', 'приглашений')} · {stats.seats} мест</span></div>

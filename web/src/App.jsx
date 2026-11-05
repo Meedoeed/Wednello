@@ -2,7 +2,10 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { initApi, get, post, setToken, getToken, getMode } from './api.js';
 import { Icon, ToastProvider, Menu, Monogram } from './ui.jsx';
 import { Landing } from './pages/Landing.jsx';
-import { AuthPage } from './pages/Auth.jsx';
+import { AuthPage, ResetPage } from './pages/Auth.jsx';
+import { PlansPage, BillingReturn } from './pages/Pricing.jsx';
+import { AdminPage } from './pages/Admin.jsx';
+import { CookieNote } from './pages/Landing.jsx';
 import { Wizard } from './pages/Wizard.jsx';
 import { Dashboard } from './pages/Dashboard.jsx';
 import { TemplatesPage } from './pages/Templates.jsx';
@@ -18,7 +21,7 @@ export const DEMO_LOGIN = { email: 'demo@wednello.ru', password: 'demo123' };
 
 function parseRoute(hash) {
   const h = (hash || '').replace(/^#/, '');
-  const m = /^(editor|guests|responses|invite|partner|couple)-(.+)$/.exec(h);
+  const m = /^(editor|guests|responses|invite|partner|couple|billing|reset)-(.+)$/.exec(h);
   if (m) return { name: m[1] === 'couple' ? 'partner' : m[1], arg: m[2] };
   return { name: h || '' };
 }
@@ -75,14 +78,15 @@ export function App() {
   let page, chrome = 'app';
   const name = route.name;
 
-  if (!authed) {
-    if (name === 'login' || name === 'signup') { page = <AuthPage initial={name} error={partnerError} />; chrome = 'none'; }
+  if (name === 'reset') { page = <ResetPage token={route.arg} />; chrome = 'none'; }
+  else if (!authed) {
+    if (name === 'login' || name === 'signup' || name === 'forgot' || name === 'billing') { page = <AuthPage key={name} initial={name} error={partnerError} />; chrome = 'none'; }
     else if (name === 'new') { page = <Wizard />; chrome = 'none'; }
     else if (name === 'templates') { page = <TemplatesPage />; chrome = 'site'; }
     else { page = <Landing />; chrome = 'none'; }
   } else if (partner) {
     const id = me.projectId;
-    page = name === 'guests' ? <GuestsPage projectId={id} /> : name === 'responses' ? <ResponsesPage projectId={id} /> : <EditorPage projectId={id} />;
+    page = name === 'guests' ? <GuestsPage projectId={id} /> : name === 'responses' ? <ResponsesPage projectId={id} /> : name === 'plans' ? <PlansPage /> : <EditorPage projectId={id} />;
     chrome = name === 'guests' || name === 'responses' ? 'app' : 'none';
   } else {
     switch (name) {
@@ -92,6 +96,9 @@ export function App() {
       case 'templates': page = <TemplatesPage />; break;
       case 'new': page = <Wizard />; chrome = 'none'; break;
       case 'account': page = <AccountPage />; break;
+      case 'plans': page = <PlansPage />; break;
+      case 'billing': page = <BillingReturn paymentId={route.arg} />; break;
+      case 'admin': page = <AdminPage />; break;
       case 'home': page = <Landing />; chrome = 'none'; break;
       default: page = <Dashboard />;
     }
@@ -103,6 +110,7 @@ export function App() {
         {chrome === 'app' && <AppHeader />}
         {chrome === 'site' && <SiteHeader solid />}
         <main className={'main main-' + chrome}>{page}</main>
+        <CookieNote />
       </Ctx.Provider>
     </ToastProvider>
   );
@@ -141,6 +149,7 @@ export function SiteHeader({ solid }) {
           <button type="button" onClick={() => go('templates')}>Шаблоны</button>
           <button type="button" onClick={() => go('how')}>Как это работает</button>
           <button type="button" onClick={() => go('features')}>Возможности</button>
+          <button type="button" onClick={() => go('pricing')}>Цены</button>
           <button type="button" onClick={() => go('faq')}>Вопросы</button>
         </nav>
         <div className="site-actions">
@@ -155,6 +164,7 @@ export function SiteHeader({ solid }) {
         <button type="button" onClick={() => go('templates')}>Шаблоны</button>
         <button type="button" onClick={() => go('how')}>Как это работает</button>
         <button type="button" onClick={() => go('features')}>Возможности</button>
+        <button type="button" onClick={() => go('pricing')}>Цены</button>
         <button type="button" onClick={() => go('faq')}>Вопросы</button>
         {!me && <button type="button" onClick={() => nav('login')}>Войти</button>}
       </div>}
@@ -174,12 +184,16 @@ function AppHeader() {
         {!partner && <nav className="app-nav" aria-label="Кабинет">
           <button type="button" className={on('dashboard')} onClick={() => nav('dashboard')}>Мои приглашения</button>
           <button type="button" className={on('templates')} onClick={() => nav('templates')}>Шаблоны</button>
+          <button type="button" className={on('plans')} onClick={() => nav('plans')}>Тарифы</button>
         </nav>}
+        {!partner && me.plan?.price === 0 && <button type="button" className="upgrade-pill hide-sm" onClick={() => nav('plans')}><Icon name="crown" size={14} />Премиум</button>}
         <span className="grow" />
         {!partner ? (
           <Menu align="right" trigger={<button type="button" className="me-btn" aria-label="Аккаунт"><Monogram a={me.user?.name} size={34} /><span className="hide-sm">{me.user?.name}</span><Icon name="down" size={14} /></button>}
             items={[
               { icon: 'settings', label: 'Аккаунт', onClick: () => nav('account') },
+              { icon: 'crown', label: 'Тарифы и оплата', onClick: () => nav('plans') },
+              me.user?.isPlatformAdmin && { icon: 'chart', label: 'Статистика сервиса', onClick: () => nav('admin') },
               { icon: 'heart', label: 'О сервисе', onClick: () => nav('home') },
               '-', { icon: 'logout', label: 'Выйти', onClick: logout },
             ]} />

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru" data-tpl="midnight" data-start="2027-06-12T16:00:00+03:00">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Анна и Михаил — приглашение на свадьбу</title>
+<meta name="description" content="Приглашаем вас на нашу свадьбу.">
+<meta name="theme-color" content="#0b1026">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="../_runtime/kit.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas class="n-sky" aria-hidden="true"></canvas>
+<main>
+<header class="n-hero" data-sec="main">
+  <div class="n-moon-wrap"><div class="n-moon k-photo"><img data-slot="0" alt="Фото пары" hidden><div class="ph">Фото в круге луны</div></div></div>
+  <div class="n-hero-in">
+    <div class="vz-guest" data-v="guest" hidden></div>
+    <p class="k-kick n-kick" data-t="heroKick">Под одним небом</p>
+    <h1 class="n-names" data-v="names">Анна <em>&amp;</em> Михаил</h1>
+    <p class="n-line" data-t="heroLine">приглашают вас на свадьбу</p>
+    <p class="n-date"><span data-d="day">12</span> <span data-d="month">июня</span> <span data-d="year">2027</span></p>
+  </div>
+  <div class="n-scroll" aria-hidden="true"><i></i></div>
+</header>
+
+<section class="k-sec s-invite" data-sec="main">
+  <div class="k-wrap k-center">
+    <svg class="n-star rv" viewBox="0 0 120 24" aria-hidden="true"><path d="M0 12h46M74 12h46" stroke="currentColor" stroke-width=".8"/><path d="M60 2l2.6 7.4L70 12l-7.4 2.6L60 22l-2.6-7.4L50 12l7.4-2.6Z" fill="currentColor"/></svg>
+    <p class="k-kick rv" data-t="inviteKick">Дорогие гости</p>
+    <h2 class="k-h2 rv d1" data-t="inviteTitle">Приглашаем вас на нашу свадьбу</h2>
+    <p class="k-lead rv d2" data-t="inviteText">Мы будем счастливы разделить с вами этот день.</p>
+    <p class="s-date rv d3"><span data-d="weekday">суббота</span> · <span data-d="long">12 июня 2027</span> · <span data-d="time">16:00</span></p>
+  </div>
+</section>
+
+<section class="k-sec s-story" data-sec="story">
+  <div class="k-wrap k-wide s-story-in">
+    <div class="k-photo s-story-photo rv"><img data-slot="1" data-slot-fallback="0" alt="Фото пары" hidden><div class="ph">Фото к истории</div></div>
+    <div class="s-story-copy">
+      <header class="k-head"><p class="k-kick rv" data-t="storyKick">Наша история</p>
+      <h2 class="k-h2 rv d1" data-t="storyTitle">Как всё начиналось</h2></header>
+      <p class="k-lead rv d2" data-t="storyText">Однажды мы встретились — и поняли, что дальше хотим идти вместе.</p>
+    </div>
+  </div>
+</section>
+
+<section class="k-sec s-venues" data-sec="venues">
+  <div class="k-wrap k-wide k-center">
+    <header class="k-head"><p class="k-kick rv" data-t="venuesKick">Где и когда</p>
+      <h2 class="k-h2 rv d1" data-t="venuesTitle">Ждём вас</h2></header>
+    <div class="k-venues" data-venues-one>
+      <article class="k-venue rv" data-venue="ceremony">
+        <span class="k-time"><span data-t="ceremonyLabel">Церемония</span> · <span data-vf="time">16:00</span></span>
+        <h3 data-vf="name">Место церемонии</h3>
+        <p class="k-addr" data-vf="address">Адрес уточняется</p>
+        <p class="k-note" data-vf="note" data-hide-empty hidden></p>
+        <a class="k-link" data-vf="map" target="_blank" rel="noopener" hidden><span data-t="mapLabel">Как добраться</span> →</a>
+      </article>
+      <article class="k-venue rv d1" data-venue="party">
+        <span class="k-time"><span data-t="partyLabel">Банкет</span> · <span data-vf="time">18:00</span></span>
+        <h3 data-vf="name">Место банкета</h3>
+        <p class="k-addr" data-vf="address">Адрес уточняется</p>
+        <p class="k-note" data-vf="note" data-hide-empty hidden></p>
+        <a class="k-link" data-vf="map" target="_blank" rel="noopener" hidden><span data-t="mapLabel">Как добраться</span> →</a>
+      </article>
+    </div>
+    <div class="s-count rv">
+      <p class="k-kick" data-t="countdownPrefix">До свадьбы осталось</p>
+      <div class="k-count">
+        <div><b data-cd="d">0</b><span data-cdl="d">дней</span></div>
+        <div><b data-cd="h">00</b><span data-cdl="h">часов</span></div>
+        <div><b data-cd="m">00</b><span data-cdl="m">минут</span></div>
+        <div><b data-cd="s">00</b><span data-cdl="s">секунд</span></div>
+      </div>
+      <div class="k-actions"><button type="button" class="k-btn ghost" data-ics><span data-t="calendarLabel">Добавить в календарь</span></button></div>
+    </div>
+  </div>
+</section>
+
+<section class="k-sec s-program" data-sec="program">
+  <div class="k-wrap k-center">
+    <header class="k-head"><p class="k-kick rv" data-t="programKick">План дня</p>
+      <h2 class="k-h2 rv d1" data-t="programTitle">Как пройдёт день</h2><p class="k-lead rv d2" data-t="programLead">Время примерное — мы предупредим, если что-то изменится.</p></header>
+    <ol class="k-timeline rv" data-list="program">
+      <template data-item="program"><li class="k-tl"><div class="t" data-f="time"></div><div><h3 data-f="title"></h3><p data-f="text"></p></div></li></template>
+      <li class="k-tl"><div class="t">16:00</div><div><h3>Церемония</h3><p>Самые важные слова.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="k-sec s-dress" data-sec="dress">
+  <div class="k-wrap k-center">
+    <header class="k-head"><p class="k-kick rv" data-t="dressKick">Дресс-код</p>
+      <h2 class="k-h2 rv d1" data-t="dressTitle">Цвета праздника</h2><p class="k-lead rv d2" data-t="dressLead">Будем рады, если вы поддержите палитру нашего дня.</p></header>
+    <div class="k-palette rv" data-list="colors">
+      <template data-item="colors"><div class="k-sw"><i></i><b data-f="name"></b><span data-f="hex"></span></div></template>
+    </div>
+  </div>
+</section>
+
+<section class="k-sec s-photos" data-sec="photos">
+  <div class="k-wrap k-wide k-center">
+    <header class="k-head"><p class="k-kick rv" data-t="photosKick">Моменты</p>
+      <h2 class="k-h2 rv d1" data-t="photosTitle">Немного о нас</h2></header>
+    <div class="k-gallery">
+      <div class="k-photo rv"><img data-slot="2" alt="" hidden><div class="ph">Галерея 1</div></div>
+      <div class="k-photo rv d1"><img data-slot="3" alt="" hidden><div class="ph">Галерея 2</div></div>
+      <div class="k-photo rv d2"><img data-slot="4" alt="" hidden><div class="ph">Галерея 3</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="k-sec s-rsvp" data-sec="rsvp">
+  <div class="k-wrap k-center">
+    <header class="k-head"><p class="k-kick rv" data-t="rsvpKick">Анкета</p>
+      <h2 class="k-h2 rv d1" data-t="rsvpTitle">Ваш ответ</h2><p class="k-lead rv d2" data-t="rsvpLead">Пожалуйста, ответьте до 1 мая.</p></header>
+    <form id="rsvpForm" class="k-form rv" novalidate>
+      <label class="field"><span data-t="rsvpName">Ваше имя</span><input name="name" type="text" required autocomplete="name" placeholder="Имя и фамилия" maxlength="120"></label>
+      <fieldset class="choice">
+        <legend data-t="rsvpAttend">Придёте на праздник?</legend>
+        <label><input type="radio" name="attend" value="yes" checked><span data-t="rsvpYes">С радостью приду</span></label>
+        <label><input type="radio" name="attend" value="no"><span data-t="rsvpNo">К сожалению, не смогу</span></label>
+      </fieldset>
+      <div id="yesFields">
+        <label class="field" data-rsvp="guests"><span data-t="rsvpGuests">Сколько вас будет</span><select name="guests"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+        <label class="field" data-rsvp="food"><span data-t="rsvpFood">Предпочтения в еде и аллергии</span><input name="food" type="text" placeholder="Например: без орехов" maxlength="300"></label>
+        <div data-rsvp="extra" class="vz-extra"></div>
+      </div>
+      <label class="field" data-rsvp="wish"><span data-t="rsvpWish">Пожелания</span><textarea name="wish" rows="4" placeholder="Тёплые слова, любимая песня, вопрос" maxlength="2000"></textarea></label>
+      <button type="submit" class="k-btn btn"><span data-t="rsvpSubmit">Отправить ответ</span></button>
+      <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
+<footer class="k-sec k-foot s-foot" data-sec="footer">
+  <div class="k-wrap">
+    <svg class="n-star rv" viewBox="0 0 120 24" aria-hidden="true"><path d="M0 12h46M74 12h46" stroke="currentColor" stroke-width=".8"/><path d="M60 2l2.6 7.4L70 12l-7.4 2.6L60 22l-2.6-7.4L50 12l7.4-2.6Z" fill="currentColor"/></svg>
+    <p class="s-end rv" data-t="endTitle">До встречи!</p>
+    <p class="k-lead rv d1" data-t="endText">Будем ждать вас.</p>
+    <p class="s-meta rv d2" data-t="footMeta">12 июня 2027 · Анна и Михаил</p>
+    <div class="vz-brand" data-v="brand" hidden></div>
+  </div>
+</footer>
+</main>
+<link rel="stylesheet" href="../_runtime/runtime.css">
+<script src="../_runtime/runtime.js"></script>
+<script src="../_runtime/kit.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

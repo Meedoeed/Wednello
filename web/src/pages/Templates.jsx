@@ -33,7 +33,7 @@ export function TemplatesPage() {
               <span className="phone"><img src={t.cover} alt="" loading="lazy" /></span>
             </button>
             <div className="tpl-card-body">
-              <div className="chips">{t.mood.map(m => <span key={m} className="chip">{m}</span>)}</div>
+              <div className="chips">{t.premium ? <span className="chip chip-pro">Премиум</span> : <span className="chip chip-free">Бесплатно</span>}{t.mood.map(m => <span key={m} className="chip">{m}</span>)}</div>
               <h3>{t.name}</h3>
               <p className="tpl-tagline">{t.tagline}</p>
               <p className="muted">{t.description}</p>

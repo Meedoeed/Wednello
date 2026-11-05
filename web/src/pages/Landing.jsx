@@ -4,6 +4,8 @@ import { Icon, Modal, Segmented } from '../ui.jsx';
 import { TemplateFrame, DeviceStage } from '../Preview.jsx';
 import { SiteHeader, Logo, useApp } from '../App.jsx';
 import { sampleProject } from './Templates.jsx';
+import { PricingCards } from './Pricing.jsx';
+import { appConfig } from '../api.js';
 
 const FEATURES = [
   { img: 'img/f-guests.webp', title: 'Личное приглашение каждому', text: 'У каждого гостя своя ссылка. Открывая её, он видит обращение по имени, а в анкете уже стоят его имя и число мест.' },
@@ -17,6 +19,8 @@ const FAQ = [
   ['Мы хотим редактировать вдвоём', 'Отправьте партнёру ссылку для совместного редактирования. Регистрироваться ему не нужно: он увидит то же приглашение, список гостей и ответы.'],
   ['Что если планы изменятся после рассылки?', 'Поправьте приглашение и нажмите «Опубликовать изменения». Ссылки у гостей останутся прежними, а содержимое обновится.'],
   ['Как гости отвечают?', 'Внизу приглашения есть короткая анкета: придут ли, сколько человек, пожелания по еде и ваши собственные вопросы, например про трансфер. Все ответы приходят в ваш кабинет.'],
+  ['Сколько это стоит?', 'Создать приглашение, добавить до 40 гостей и собрать ответы можно бесплатно. Премиум оплачивается один раз, без подписки: все анимированные шаблоны, музыка, гости без ограничений, выгрузка в Excel и без нашей отметки.'],
+  ['Можно ли вернуть деньги?', 'Да. Если в течение 14 дней после оплаты вы не опубликовали приглашение на премиум-шаблоне, вернём всю сумму — просто напишите нам.'],
   ['Можно ли добавить музыку?', 'Да. Загрузите трек, и в углу приглашения появится кнопка с нотой. Включается она по нажатию гостя: браузеры не дают сайтам запускать звук сами.'],
 ];
 
@@ -52,7 +56,7 @@ export function Landing() {
 
       <section className="facts" aria-label="Коротко о сервисе">
         <div className="wrap facts-in">
-          <div><b>4</b><span>анимированных шаблона с оживающей заставкой</span></div>
+          <div><b>{TEMPLATES.length}</b><span>шаблонов, три из них с оживающей заставкой</span></div>
           <div><b>1</b><span>личная ссылка и обращение для каждого гостя</span></div>
           <div><b>30</b><span>минут от первого шага до готового приглашения</span></div>
           <div><b>0</b><span>приложений, которые гостю нужно устанавливать</span></div>
@@ -63,8 +67,8 @@ export function Landing() {
         <div className="wrap">
           <header className="sec-head center">
             <p className="eyebrow">Коллекция</p>
-            <h2>Четыре истории, <em>одна ваша</em></h2>
-            <p className="sec-lead">Каждый шаблон оживает при прокрутке: загорается проектор, срабатывает вспышка фотобудки, раскрывается книга или конверт. Нажмите, чтобы пролистать вживую.</p>
+            <h2>Разные истории, <em>одна ваша</em></h2>
+            <p className="sec-lead">Шаблоны оживают при прокрутке: загорается проектор, мерцают звёзды, рисуются ветви, раскрывается книга или конверт. Нажмите, чтобы пролистать вживую.</p>
           </header>
         </div>
         <div className="showcase-stage">
@@ -73,7 +77,7 @@ export function Landing() {
             {TEMPLATES.map((t, i) => (
               <button key={t.id} type="button" className="phone-card" style={{ '--i': i }} onClick={() => setView(t.id)}>
                 <span className="phone"><img src={t.cover} alt="" loading="lazy" /></span>
-                <span className="phone-cap"><b>{t.name}</b><small>{t.tagline}</small></span>
+                <span className="phone-cap"><b>{t.name}{t.premium && <i className="pro-tag">Премиум</i>}</b><small>{t.tagline}</small></span>
                 <span className="phone-open"><Icon name="eye" size={15} />Пролистать</span>
               </button>
             ))}
@@ -88,7 +92,7 @@ export function Landing() {
             <p className="eyebrow">Как это работает</p>
             <h2>Один вечер <em>вдвоём</em></h2>
             <ol className="steps">
-              <li><span className="step-n">I</span><div><h3>Выберите шаблон</h3><p>Кино, фотобудка, книга или письмо. Сменить можно в любой момент, ничего не потеряв.</p></div></li>
+              <li><span className="step-n">I</span><div><h3>Выберите шаблон</h3><p>Кино, звёздное небо, сад, книга или письмо. Сменить можно в любой момент, ничего не потеряв.</p></div></li>
               <li><span className="step-n">II</span><div><h3>Расскажите о дне</h3><p>Имена, дата, место, план дня, фото и палитра. Справа сразу видно, как это увидит гость.</p></div></li>
               <li><span className="step-n">III</span><div><h3>Разошлите ссылки</h3><p>Вставьте список гостей одним текстом и отправляйте личные ссылки в мессенджеры. Ответы придут к вам.</p></div></li>
             </ol>
@@ -132,6 +136,18 @@ export function Landing() {
         </div>
       </section>
 
+      <section className="pricing-sec" id="pricing">
+        <div className="wrap">
+          <header className="sec-head center">
+            <p className="eyebrow">Цены</p>
+            <h2>Платите один раз — <em>когда будете готовы</em></h2>
+            <p className="sec-lead">Без подписки. Соберите приглашение бесплатно, посмотрите его глазами гостя, а Премиум подключите перед рассылкой.</p>
+          </header>
+          <PricingCards onChoose={() => start()} ctaFree="Начать бесплатно" ctaPaid="Создать приглашение" />
+          <p className="center small muted mt">Оплата через ЮKassa · чек на e-mail · возврат в течение 14 дней</p>
+        </div>
+      </section>
+
       <section className="faq" id="faq">
         <div className="wrap faq-in">
           <header className="sec-head">
@@ -167,6 +183,12 @@ export function Landing() {
           <Logo />
           <p>Онлайн-приглашения на свадьбу с анкетой для гостей</p>
           <span className="grow" />
+          <nav className="foot-links" aria-label="Документы">
+            <a href="/legal/terms">Оферта</a>
+            <a href="/legal/privacy">Конфиденциальность</a>
+            <a href="/legal/contacts">Контакты</a>
+            {appConfig().support?.telegram && <a href={`https://t.me/${appConfig().support.telegram.replace(/^@/, '')}`} target="_blank" rel="noopener">Telegram</a>}
+          </nav>
           <button type="button" className="link-btn" onClick={() => nav(me ? 'dashboard' : 'login')}>{me ? 'Мои приглашения' : 'Войти'}</button>
         </div>
       </footer>
@@ -180,6 +202,18 @@ export function Landing() {
         </>}>
         {sample && <div className="stage-modal"><DeviceStage device={device}><TemplateFrame project={sample} mode="public" fill /></DeviceStage></div>}
       </Modal>
+    </div>
+  );
+}
+
+/** Короткое уведомление о cookie — показывается, только если включена Метрика */
+export function CookieNote() {
+  const [hidden, setHidden] = useState(() => { try { return !appConfig().metrika || localStorage.getItem('wn.cookie') === '1'; } catch { return true; } });
+  if (hidden) return null;
+  return (
+    <div className="cookie-note" role="status">
+      <span>Мы используем cookie и Яндекс Метрику, чтобы сервис работал лучше. <a href="/legal/privacy" target="_blank" rel="noopener">Подробнее</a></span>
+      <button type="button" className="btn btn-primary btn-sm" onClick={() => { try { localStorage.setItem('wn.cookie', '1'); } catch {} setHidden(true); }}>Хорошо</button>
     </div>
   );
 }
