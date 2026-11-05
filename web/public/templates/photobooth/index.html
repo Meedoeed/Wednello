@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru" data-tpl="photobooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Анна и Михаил — свадебное приглашение</title>
+<meta name="description" content="Приглашаем вас на нашу свадьбу. 12 июня 2027.">
+<meta name="theme-color" content="#0b0706">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Oswald:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+
+<!-- ══════════ ФОТОБУДКА (анимация по прокрутке) ══════════ -->
+<section id="cinema" aria-label="Приглашение">
+  <div class="stage" id="stage">
+
+    <div class="wall" id="wall">
+      <img src="assets/wall.jpg" alt="" draggable="false">
+      <i class="lamp" id="lamp"></i>
+    </div>
+
+    <!-- мир фотобудки: координаты в пикселях исходной картинки будки 1086×1448 -->
+    <div class="world" id="world">
+      <img class="booth" id="booth" src="assets/booth.webp" alt="Фотобудка" draggable="false">
+      <i class="sign-glow" id="signGlow"></i>
+      <i class="cabin-glow" id="cabinGlow"></i>
+
+      <!-- полоска: 3 фото + приглашение -->
+      <div class="strip" id="strip">
+        <div class="win" data-i="0"><div class="ph"><b>1</b><span>Фото</span></div><img data-slot="0" alt="" hidden></div>
+        <div class="win" data-i="1"><div class="ph"><b>2</b><span>Фото</span></div><img data-slot="1" alt="" hidden></div>
+        <div class="win" data-i="2"><div class="ph"><b>3</b><span>Фото</span></div><img data-slot="2" alt="" hidden></div>
+        <div class="win inv" data-i="3">
+          <div class="inv-in" id="invIn">
+            <div class="i-kick" data-t="inviteKick">Приглашаем вас</div>
+            <div class="i-title" data-t="inviteTitle">на нашу свадьбу</div>
+            <div class="i-orn"><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></svg><i></i></div>
+            <div class="i-names" data-v="names">Анна <em>&amp;</em> Михаил</div>
+            <div class="i-date" data-t="inviteDate">12 июня 2027 · 16:00</div>
+            <div class="i-place" data-t="invitePlace">Название площадки · город</div>
+          </div>
+        </div>
+        <img class="frame" src="assets/strip.webp" alt="" draggable="false">
+      </div>
+
+      <div class="armclip" id="armClip"><img class="arm" id="arm" src="assets/arm.webp" alt="" draggable="false"></div>
+
+      <img class="curt rod" id="rod" src="assets/curtain.webp" alt="" draggable="false">
+      <img class="curt cloth" id="cloth" src="assets/curtain.webp" alt="" draggable="false">
+
+      <img class="flash-glow" id="flashGlow" src="assets/glow.jpg" alt="" draggable="false">
+    </div>
+
+    <div class="dim" id="dim"></div>
+    <div class="flash" id="flash"></div>
+    <div class="dust" id="dust"></div>
+    <div class="vignette"></div>
+
+    <div class="count" id="count" aria-hidden="true"><span id="countNum">3</span></div>
+    <div class="caption" id="caption"></div>
+
+    <div class="intro" id="hint">
+      <div class="vz-guest" data-v="guest" hidden></div>
+      <div class="intro-kick" data-t="introKick">Фото на память</div>
+      <div class="intro-names" data-v="names">Анна <em>&amp;</em> Михаил</div>
+      <div class="scroll-cue"><span>Листайте вниз</span><i></i></div>
+    </div>
+
+    <button class="skip" id="skip" type="button"><span data-t="skip">Пропустить</span> <span aria-hidden="true">→</span></button>
+  </div>
+</section>
+
+<!-- ══════════ ОБЫЧНЫЙ САЙТ ══════════ -->
+<div class="content" id="content">
+
+  <section id="program" class="wrap reveal" data-sec="program">
+    <div class="act" data-t="programAct">Акт I</div>
+    <h2 data-t="programTitle">План вечера</h2>
+    <p class="lead"><span data-t="countdownPrefix">До свадьбы</span> <b data-v="daysLeft">—</b>. <span data-t="programLead">Мы постарались, чтобы в этом дне было всё: трогательное, весёлое и немного танцевальное.</span></p>
+    <div class="timeline" data-list="program">
+      <template data-item="program"><div class="tl"><div class="time" data-f="time"></div><div class="mark"></div><div class="what"><h3 data-f="title"></h3><p data-f="text"></p></div></div></template>
+      <div class="tl"><div class="time">15:30</div><div class="mark"></div><div class="what"><h3>Сбор гостей</h3><p>Welcome-зона, лёгкие закуски и напитки. Занимайте места, скоро начнётся.</p></div></div>
+      <div class="tl"><div class="time">16:00</div><div class="mark"></div><div class="what"><h3>Церемония</h3><p>Главный кадр дня. Просим не опаздывать: дублей не будет.</p></div></div>
+      <div class="tl"><div class="time">17:00</div><div class="mark"></div><div class="what"><h3>Фуршет и фотосессия</h3><p>Поздравления, объятия и общие фотографии.</p></div></div>
+      <div class="tl"><div class="time">18:00</div><div class="mark"></div><div class="what"><h3>Банкет</h3><p>Ужин, тосты, музыка и истории, которые мы будем вспоминать годами.</p></div></div>
+      <div class="tl"><div class="time">20:00</div><div class="mark"></div><div class="what"><h3>Первый танец</h3><p>Свет приглушат, а дальше ваш выход на танцпол.</p></div></div>
+      <div class="tl"><div class="time">21:30</div><div class="mark"></div><div class="what"><h3>Торт и вечерняя программа</h3><p>Сладкая кульминация и сюрпризы. А ещё на площадке будет настоящая фотобудка.</p></div></div>
+      <div class="tl"><div class="time">23:00</div><div class="mark"></div><div class="what"><h3>Финал вечера</h3><p>Прощальный круг и последняя вспышка.</p></div></div>
+    </div>
+  </section>
+
+  <section id="colors" class="wrap reveal" data-sec="dress">
+    <div class="act" data-t="dressAct">Акт II</div>
+    <h2 data-t="dressTitle">Цвета вечера</h2>
+    <p class="lead" data-t="dressLead">Палитра нашей фотобудки: красный бархат, тёплый кирпич и свет одинокой лампы. Будем рады, если ваши наряды её поддержат.</p>
+    <div class="palette" data-list="colors">
+      <template data-item="colors"><div class="sw"><i></i><b data-f="name"></b><span data-f="hex"></span></div></template>
+      <div class="sw" style="--c:#9c1a1f"><i></i><b>Бархат шторки</b><span>#9C1A1F</span></div>
+      <div class="sw" style="--c:#5b2b22"><i></i><b>Кирпич</b><span>#5B2B22</span></div>
+      <div class="sw" style="--c:#e0a550"><i></i><b>Свет лампы</b><span>#E0A550</span></div>
+      <div class="sw" style="--c:#e9dcc3"><i></i><b>Бумага снимка</b><span>#E9DCC3</span></div>
+      <div class="sw" style="--c:#1c1412"><i></i><b>Графит</b><span>#1C1412</span></div>
+    </div>
+  </section>
+
+  <section id="photo" class="wrap reveal" data-sec="photos">
+    <div class="act" data-t="photosAct">Акт III</div>
+    <h2 data-t="photosTitle">Кадры на память</h2>
+    <figure class="still">
+      <img src="assets/still.webp" data-slot="3" data-slot-keep alt="Букет, обручальные кольца и старые снимки" draggable="false">
+    </figure>
+    <div class="photo-text">
+      <p class="quote" data-t="photosQuote">«Есть кадры, которые не нужно обрабатывать. Достаточно просто быть в них вместе».</p>
+      <p data-t="photosText">Мы собрали фотографии, которые для нас значат больше слов. Ждём, чтобы вы стали частью следующих.</p>
+      <p class="sign" data-t="photosSign">Анна и Михаил</p>
+    </div>
+  </section>
+
+  <section id="rsvp" class="wrap reveal" data-sec="rsvp">
+    <div class="act" data-t="rsvpAct">Акт IV</div>
+    <h2 data-t="rsvpTitle">Ваш ответ</h2>
+    <p class="lead" data-t="rsvpLead">Подтвердите, пожалуйста, присутствие до 1 мая 2027, чтобы мы заранее забронировали для вас место. А ещё мы очень ждём ваших пожеланий.</p>
+    <form id="rsvpForm" class="form" novalidate>
+      <label class="field"><span data-t="rsvpName">Ваше имя</span><input name="name" type="text" required autocomplete="name" placeholder="Имя и фамилия"></label>
+
+      <fieldset class="choice">
+        <legend data-t="rsvpAttend">Придёте на праздник?</legend>
+        <label><input type="radio" name="attend" value="yes" checked><span data-t="rsvpYes">С радостью приду</span></label>
+        <label><input type="radio" name="attend" value="no"><span data-t="rsvpNo">К сожалению, не смогу</span></label>
+      </fieldset>
+
+      <div id="yesFields">
+        <label class="field" data-rsvp="guests"><span data-t="rsvpGuests">Сколько вас придёт</span>
+          <select name="guests"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        </label>
+        <label class="field" data-rsvp="food"><span data-t="rsvpFood">Предпочтения в еде и аллергии</span><input name="food" type="text" placeholder="Например: без морепродуктов"></label>
+        <div data-rsvp="extra" class="vz-extra"></div>
+      </div>
+
+      <label class="field" data-rsvp="wish"><span data-t="rsvpWish">Пожелания и отзыв</span><textarea name="wish" rows="4" placeholder="Ваши тёплые слова, идея для музыки, вопрос — всё что угодно"></textarea></label>
+
+      <button type="submit" class="btn"><span data-t="rsvpSubmit">Отправить ответ</span></button>
+      <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <footer class="credits reveal" data-sec="footer">
+    <div class="credits-roll">
+      <p><small data-t="credit1Label">Режиссёры</small><span data-t="credit1">Анна и Михаил</span></p>
+      <p><small data-t="credit2Label">В главных ролях</small><span data-t="credit2">Вы</span></p>
+      <p><small data-t="credit3Label">Свет, музыка и тёплые слова</small><span data-t="credit3">Наши друзья и семья</span></p>
+    </div>
+    <div class="the-end"><span data-t="endTitle">Ещё один кадр?</span> <em data-t="endAccent">Конечно.</em></div>
+    <div class="foot-meta" data-t="footMeta">12 июня 2027 · Анна &amp; Михаил</div>
+    <div class="vz-brand" data-v="brand" hidden></div>
+  </footer>
+</div>
+
+</main>
+<link rel="stylesheet" href="../_runtime/runtime.css">
+<script src="../_runtime/runtime.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

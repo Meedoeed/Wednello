@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ru" data-tpl="cinema">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Анна и Михаил — приглашение на свадьбу</title>
+<meta name="description" content="Приглашаем вас на нашу свадьбу. Сеанс начинается 12 июня 2027.">
+<meta name="theme-color" content="#080504">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Oswald:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+
+<!-- ══════════ КИНОСЕАНС (анимация по прокрутке) ══════════ -->
+<section id="cinema" aria-label="Приглашение">
+  <div class="stage" id="stage">
+
+    <!-- зал -->
+    <div class="hall" id="hall">
+      <img src="assets/hall.jpg" alt="" draggable="false">
+      <div class="cast" id="cast"></div>
+      <div class="hall-dim" id="hallDim"></div>
+    </div>
+
+    <!-- экран: сюда проецируется всё содержимое -->
+    <div class="screen" id="screen" aria-hidden="true">
+      <div class="s-inner" id="sInner">
+        <div class="leader"></div>
+        <div class="sweep" id="sweep"></div>
+        <div class="count" id="count"><span id="countNum">5</span></div>
+
+        <div class="slides" id="slides">
+          <figure class="slide">
+            <div class="media"><div class="ph"><b>1</b><span>Фото</span></div><img data-slot="0" alt="" hidden></div>
+            <figcaption><small>Кадр 1 из 5</small><span data-cap="0" data-t="cap0">Всё началось с одного взгляда…</span></figcaption>
+          </figure>
+          <figure class="slide">
+            <div class="media"><div class="ph"><b>2</b><span>Фото</span></div><img data-slot="1" alt="" hidden></div>
+            <figcaption><small>Кадр 2 из 5</small><span data-cap="1" data-t="cap1">…потом был разговор, который не хотелось заканчивать</span></figcaption>
+          </figure>
+          <figure class="slide">
+            <div class="media"><div class="ph"><b>3</b><span>Фото</span></div><img data-slot="2" alt="" hidden></div>
+            <figcaption><small>Кадр 3 из 5</small><span data-cap="2" data-t="cap2">Мы поняли, что это надолго</span></figcaption>
+          </figure>
+          <figure class="slide">
+            <div class="media"><div class="ph"><b>4</b><span>Фото</span></div><img data-slot="3" alt="" hidden></div>
+            <figcaption><small>Кадр 4 из 5</small><span data-cap="3" data-t="cap3">И однажды прозвучало «да»</span></figcaption>
+          </figure>
+          <figure class="slide">
+            <div class="media"><div class="ph"><b>5</b><span>Фото</span></div><img data-slot="4" alt="" hidden></div>
+            <figcaption><small>Кадр 5 из 5</small><span data-cap="4" data-t="cap4">Теперь мы хотим разделить главный кадр с вами</span></figcaption>
+          </figure>
+        </div>
+
+        <div class="invite" id="invite">
+          <div class="i-kick" data-t="inviteKick">Приглашаем вас</div>
+          <div class="i-title" data-t="inviteTitle">на нашу свадьбу</div>
+          <div class="i-orn"><i></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></svg><i></i></div>
+          <div class="i-names" data-v="names">Анна <em>&amp;</em> Михаил</div>
+          <div class="i-date" data-t="inviteDate">12 июня 2027</div>
+        </div>
+
+        <div class="s-warm"></div>
+        <div class="s-scratch" id="sScratch"></div>
+        <div class="s-vig"></div>
+        <div class="s-dim" id="sDim"></div>
+      </div>
+    </div>
+
+    <!-- проектор -->
+    <div class="fore" id="fore">
+      <div class="booth"></div>
+      <div class="table" id="table"></div>
+      <div class="proj" id="proj">
+        <div class="proj-shadow"></div>
+        <img class="proj-img" id="projImg" src="assets/projector.webp" alt="Кинопроектор" draggable="false">
+        <div class="reel reel-a" id="reelA"><img src="assets/reel-full.webp" alt="" draggable="false"></div>
+        <div class="reel reel-b" id="reelB"><img src="assets/reel-empty.webp" alt="" draggable="false"></div>
+        <i class="cap cap-a"></i><i class="cap cap-b"></i>
+        <div class="glow vent-glow" id="ventGlow"></div>
+        <div class="glow lens-glow" id="lampGlow"></div>
+      </div>
+    </div>
+
+    <!-- луч -->
+    <div class="beam" id="beam"><img src="assets/beam.jpg" alt="" draggable="false"></div>
+
+    <!-- билеты -->
+    <div class="tickets" id="tickets">
+      <div class="ticket">
+        <img src="assets/ticket.webp" alt="" draggable="false">
+        <div class="t-main">
+          <div class="t-kick" data-t="t1Kick">Премьера · один сеанс</div>
+          <div class="t-title" data-t="t1Title">Свадьба</div>
+          <div class="t-names" data-t="t1Names">Анна &amp; Михаил</div>
+          <div class="t-meta" data-t="t1Meta">12 июня 2027 · сбор гостей 15:30</div>
+        </div>
+        <div class="t-stub"><span data-t="t1Stub">Вход · № 001</span></div>
+      </div>
+      <div class="ticket">
+        <img src="assets/ticket.webp" alt="" draggable="false">
+        <div class="t-main">
+          <div class="t-kick" data-t="t2Kick">Акт I</div>
+          <div class="t-title" data-t="t2Title">Церемония</div>
+          <div class="t-names" data-t="t2Names">Название площадки</div>
+          <div class="t-meta" data-t="t2Meta">Начало в 16:00 · адрес, город</div>
+        </div>
+        <div class="t-stub"><span data-t="t2Stub">Ряд 1</span></div>
+      </div>
+      <div class="ticket">
+        <img src="assets/ticket.webp" alt="" draggable="false">
+        <div class="t-main">
+          <div class="t-kick" data-t="t3Kick">Акт II</div>
+          <div class="t-title" data-t="t3Title">Банкет</div>
+          <div class="t-names" data-t="t3Names">Название ресторана</div>
+          <div class="t-meta" data-t="t3Meta">С 18:00 до последнего танца</div>
+        </div>
+        <div class="t-stub"><span data-t="t3Stub">Место 2</span></div>
+      </div>
+    </div>
+
+    <div class="dust" id="dust"></div>
+    <div class="vignette"></div>
+
+    <div class="intro" id="hint">
+      <div class="vz-guest" data-v="guest" hidden></div>
+      <div class="intro-kick" data-t="introKick">Вы приглашены на премьеру</div>
+      <div class="intro-names" data-v="names">Анна <em>&amp;</em> Михаил</div>
+      <div class="scroll-cue"><span>Листайте вниз</span><i></i></div>
+    </div>
+
+    <button class="skip" id="skip" type="button"><span data-t="skip">Пропустить сеанс</span> <span aria-hidden="true">→</span></button>
+  </div>
+</section>
+
+<!-- ══════════ ОБЫЧНЫЙ САЙТ ══════════ -->
+<div class="content" id="content">
+
+  <section id="program" class="wrap reveal" data-sec="program">
+    <div class="act" data-t="programAct">Акт I</div>
+    <h2 data-t="programTitle">План вечера</h2>
+    <p class="lead"><span data-t="countdownPrefix">До премьеры</span> <b data-v="daysLeft">—</b>. <span data-t="programLead">Мы постарались, чтобы в этом дне были все жанры: трогательное, весёлое и немного танцевальное.</span></p>
+    <div class="timeline" data-list="program">
+      <template data-item="program"><div class="tl"><div class="time" data-f="time"></div><div class="mark"></div><div class="what"><h3 data-f="title"></h3><p data-f="text"></p></div></div></template>
+      <div class="tl"><div class="time">15:30</div><div class="mark"></div><div class="what"><h3>Сбор гостей</h3><p>Welcome-зона, лёгкие закуски и напитки. Занимайте места — сеанс скоро начнётся.</p></div></div>
+      <div class="tl"><div class="time">16:00</div><div class="mark"></div><div class="what"><h3>Церемония</h3><p>Главный кадр дня. Просим не опаздывать: повторов не будет.</p></div></div>
+      <div class="tl"><div class="time">17:00</div><div class="mark"></div><div class="what"><h3>Фуршет и фотосессия</h3><p>Поздравления, объятия и общие фотографии.</p></div></div>
+      <div class="tl"><div class="time">18:00</div><div class="mark"></div><div class="what"><h3>Банкет</h3><p>Ужин, тосты, музыка и истории, которые мы будем вспоминать годами.</p></div></div>
+      <div class="tl"><div class="time">20:00</div><div class="mark"></div><div class="what"><h3>Первый танец</h3><p>Свет приглушат, а дальше — ваш выход на танцпол.</p></div></div>
+      <div class="tl"><div class="time">21:30</div><div class="mark"></div><div class="what"><h3>Торт и вечерняя программа</h3><p>Сладкая кульминация и сюрпризы.</p></div></div>
+      <div class="tl"><div class="time">23:00</div><div class="mark"></div><div class="what"><h3>Титры</h3><p>Финал вечера и прощальный круг.</p></div></div>
+    </div>
+  </section>
+
+  <section id="colors" class="wrap reveal" data-sec="dress">
+    <div class="act" data-t="dressAct">Акт II</div>
+    <h2 data-t="dressTitle">Цвета вечера</h2>
+    <p class="lead" data-t="dressLead">Палитра старого кинотеатра: бархат, позолота и тёплый свет прожектора. Будем рады, если ваши наряды её поддержат.</p>
+    <div class="palette" data-list="colors">
+      <template data-item="colors"><div class="sw"><i></i><b data-f="name"></b><span data-f="hex"></span></div></template>
+      <div class="sw" style="--c:#6e1b22"><i></i><b>Бордо партера</b><span>#6E1B22</span></div>
+      <div class="sw" style="--c:#b8914f"><i></i><b>Старое золото</b><span>#B8914F</span></div>
+      <div class="sw" style="--c:#eee3cd"><i></i><b>Слоновая кость</b><span>#EEE3CD</span></div>
+      <div class="sw" style="--c:#8a6a45"><i></i><b>Сепия</b><span>#8A6A45</span></div>
+      <div class="sw" style="--c:#1c1613"><i></i><b>Графит экрана</b><span>#1C1613</span></div>
+    </div>
+  </section>
+
+  <section id="photo" class="wrap reveal" data-sec="photos">
+    <div class="act" data-t="photosAct">Акт III</div>
+    <h2 data-t="photosTitle">Кадры на память</h2>
+    <div class="photo-grid">
+      <div class="filmwrap">
+        <div class="win w1"><div class="ph"><b>1</b></div><img data-slot="5" data-slot-fallback="0" alt="" hidden></div>
+        <div class="win w2"><div class="ph"><b>2</b></div><img data-slot="6" data-slot-fallback="1" alt="" hidden></div>
+        <div class="win w3"><div class="ph"><b>3</b></div><img data-slot="7" data-slot-fallback="2" alt="" hidden></div>
+        <div class="win w4"><div class="ph"><b>4</b></div><img data-slot="8" data-slot-fallback="3" alt="" hidden></div>
+        <img class="strip" src="assets/filmstrip.webp" alt="" draggable="false">
+      </div>
+      <div class="photo-text">
+        <p class="quote" data-t="photosQuote">«Есть кадры, которые не нужно обрабатывать. Достаточно просто быть в них вместе».</p>
+        <p data-t="photosText">Мы собрали фотографии, которые для нас значат больше слов. Ждём, чтобы вы стали частью следующих.</p>
+        <p class="sign" data-t="photosSign">Анна и Михаил</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="rsvp" class="wrap reveal" data-sec="rsvp">
+    <div class="act" data-t="rsvpAct">Акт IV</div>
+    <h2 data-t="rsvpTitle">Ваш ответ</h2>
+    <p class="lead" data-t="rsvpLead">Подтвердите, пожалуйста, присутствие до 1 мая 2027 — мы забронируем для вас место в зале. А ещё мы очень ждём ваших пожеланий.</p>
+    <form id="rsvpForm" class="form" novalidate>
+      <label class="field"><span data-t="rsvpName">Ваше имя</span><input name="name" type="text" required autocomplete="name" placeholder="Имя и фамилия"></label>
+
+      <fieldset class="choice">
+        <legend data-t="rsvpAttend">Придёте на сеанс?</legend>
+        <label><input type="radio" name="attend" value="yes" checked><span data-t="rsvpYes">С радостью приду</span></label>
+        <label><input type="radio" name="attend" value="no"><span data-t="rsvpNo">К сожалению, не смогу</span></label>
+      </fieldset>
+
+      <div id="yesFields">
+        <label class="field" data-rsvp="guests"><span data-t="rsvpGuests">Сколько вас придёт</span>
+          <select name="guests"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        </label>
+        <label class="field" data-rsvp="food"><span data-t="rsvpFood">Предпочтения в еде и аллергии</span><input name="food" type="text" placeholder="Например: без морепродуктов"></label>
+        <div data-rsvp="extra" class="vz-extra"></div>
+      </div>
+
+      <label class="field" data-rsvp="wish"><span data-t="rsvpWish">Пожелания и отзыв</span><textarea name="wish" rows="4" placeholder="Ваши тёплые слова, идея для музыки, вопрос — всё что угодно"></textarea></label>
+
+      <button type="submit" class="btn"><span data-t="rsvpSubmit">Забронировать место</span></button>
+      <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <footer class="credits reveal" data-sec="footer">
+    <div class="credits-roll">
+      <p><small data-t="credit1Label">Режиссёры</small><span data-t="credit1">Анна и Михаил</span></p>
+      <p><small data-t="credit2Label">В главных ролях</small><span data-t="credit2">Вы</span></p>
+      <p><small data-t="credit3Label">Музыка, свет и тёплые слова</small><span data-t="credit3">Наши друзья и семья</span></p>
+    </div>
+    <div class="the-end"><span data-t="endTitle">Конец?</span> <em data-t="endAccent">Только начало.</em></div>
+    <div class="foot-meta" data-t="footMeta">12 июня 2027 · Анна &amp; Михаил</div>
+    <div class="vz-brand" data-v="brand" hidden></div>
+  </footer>
+</div>
+
+</main>
+<link rel="stylesheet" href="../_runtime/runtime.css">
+<script src="../_runtime/runtime.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
